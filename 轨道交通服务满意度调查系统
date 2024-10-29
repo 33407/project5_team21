@@ -1,0 +1,53 @@
+import pandas as pd
+import re
+from sqlite3 import connect
+
+# 定义数据库连接
+def create_connection():
+    conn = None
+    try:
+        conn = connect('passenger_info.db')  # 创建SQLite数据库
+        print("Connection to SQLite DB successful")
+    except Exception as e:
+        print(e)
+    return conn
+
+# 函数用于添加乘客信息
+def add_passenger_info(conn, name, contact, date):
+    query = f"INSERT INTO passengers (name, contact, date) VALUES ('{name}', '{contact}', '{date}')"
+    cursor = conn.cursor()
+    cursor.execute(query)
+    conn.commit()
+
+# 验证联系方式格式
+def validate_contact(contact):
+    pattern = r'^\d{10}$'  #中国大陆手机号码格式
+    if not re.match(pattern, contact):
+        return False
+    return True
+
+# 主函数，获取用户输入并进行处理
+def main():
+    conn = create_connection()
+    
+    while True:
+        name = input("请输入乘客姓名（输入'quit'退出）：")
+        if name == 'quit':
+            break
+        
+        contact = input("请输入乘客联系方式：")
+        if not validate_contact(contact):
+            print("无效的联系方式，请重新输入！")
+            continue
+
+        date = input("请输入乘车日期：")
+
+        add_passenger_info(conn, name, contact, date)
+
+    # 打印乘车记录报告
+    passenger_df = pd.read_sql_query("SELECT * FROM passengers", conn)
+    print("\n乘客乘车记录报告:")
+    print(passenger_df)
+
+if __name__ == "__main__":
+    main()
